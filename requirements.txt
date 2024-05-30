@@ -1,0 +1,11 @@
+transformer-lens
+sae-lens
+transformers[torch]
+datasets
+pandas
+jax[cuda12]
+safetensors
+huggingface-hub
+penzai
+appdirs
+nnsight
