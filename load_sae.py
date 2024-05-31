@@ -1,7 +1,7 @@
 import os
 
 from huggingface_hub import HfFileSystem
-from safetensors.flax import load_file
+from safetensors.torch import load_file
 import jax
 
 sae_cache = {}

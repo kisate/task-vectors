@@ -8,7 +8,6 @@ import json
 from typing import List
 import torch
 import numpy as np
-from penzai import pz
 from tqdm.auto import trange, tqdm
 from load_sae import get_sae
 
@@ -193,10 +192,10 @@ class ICLRunner:
         self.random_pairs = [self.get_random_pairs(x) for x in self.train_pairs]
         self.eval_pairs = [self.gen.sample(pairs, k=1) for _ in range(batch_size)]
 
-        self.prompt = "<|user|>\nFollow the pattern:\n{}"
+        self.prompt = "<|user|>\nFollow the pattern: {}"
 
     def get_prompt(self, pairs):
-        return self.prompt.format("\n".join([f"{x} -> {y}" for x, y in pairs]))
+        return self.prompt.format(", ".join([f"{x} -> {y}" for x, y in pairs]))
     
     def get_random_pairs(self, pairs):
         all_tokens = [x for pair in self.pairs for x in pair]
@@ -221,17 +220,17 @@ def logprob_loss(logits, tokens, sep=1599, pad_token=32000, n_first=None, shift=
     logits = torch.take_along_dim(logits, tokens[:, 1:, None], dim=-1).squeeze(-1)
 
     mask = tokens[:, 1:] == sep
-    mask = torch.cumsum(mask[:, ::-1], dim=-1)[:, ::-1] > 0
+    mask = torch.flip(torch.cumsum(torch.flip(mask, [1]), 1), [1]) > 0
+    # mask = torch.cumsum(mask[:, ::-1], dim=-1)[:, ::-1] > 0
     mask = torch.logical_not(mask)
-
     if shift is not None:
-        rolled_mask = torch.roll(mask, shift, dim=-1)
+        rolled_mask = torch.roll(mask, shift, dims=-1)
         mask = torch.logical_and(mask, rolled_mask)
 
     # print(mask[:, -5:])
     
     if n_first is not None:
-        rolled_mask = torch.roll(mask, n_first, dim=-1)
+        rolled_mask = torch.roll(mask, n_first, dims=-1)
         mask = torch.logical_and(mask, torch.logical_not(rolled_mask))
 
     mask = torch.logical_and(mask, tokens[:, 1:] != pad_token)
